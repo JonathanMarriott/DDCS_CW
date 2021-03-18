@@ -31,3 +31,8 @@ def view_data_segments(xs, ys):
     plt.set_cmap('Dark2')
     plt.scatter(xs, ys, c=colour)
     plt.show()
+
+
+x = np.array(xs)
+y = np.array(ys)
+print(x,y)

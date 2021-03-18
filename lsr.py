@@ -34,3 +34,8 @@ def view_data_segments(xs, ys):
 
 xs,ys = load_points_from_file(sys.argv[1])
 view_data_segments(xs,ys)
+
+
+x = np.array(xs)
+y = np.array(ys)
+print(x,y)
