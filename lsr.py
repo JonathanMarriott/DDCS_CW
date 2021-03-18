@@ -67,47 +67,101 @@ def fitPoly(xs,ys,n):
     return mleFit(addPolyTerms(xs,n),ys)
 
 def calcLinearError(xs,ys):
-    numSegs = len(xs) // 20
-    error = 0
-    for i in range(numSegs):
-        cutXs = xs[20*i:20*i+20]
-        cutYs = ys[20*i:20*i+20]
-        A = fitLinear(cutXs,cutYs)
-        diff = np.absolute(np.subtract(cutYs, A[0]+cutXs*A[1]))
-        error = error + np.sum(diff)
-        #plt.plot(cutXs,A[0]+cutXs*A[1])
+    cutXs = xs[:15]
+    cutYs = ys[:15]
+    testXs = xs[15:]
+    testYs = ys[15:]
+    A = fitLinear(cutXs,cutYs)
+    calcYs = addBias(testXs) @ A  
+    #plt.vlines(testXs,testYs,calcYs,colors='black')
+    diff = np.absolute(np.subtract(testYs, calcYs))
+    error = np.sum(diff)
+   # plt.plot(xs,addTrigTerms(xs) @ A,c='red')
+    #plt.scatter(cutXs,cutYs)
+    #plt.scatter(testXs,testYs,marker='x',c='orange')
     return error
 
 def calcPolyError(xs,ys,n):
-    numSegs = len(xs) // 20
-    error = 0
-    for i in range(numSegs):
-        cutXs = xs[20*i:20*i+20]
-        cutYs = ys[20*i:20*i+20]
-        A = fitPoly(cutXs,cutYs,n)
-        calcYs = addPolyTerms(cutXs,n) @ A  
-        diff = np.absolute(np.subtract(cutYs, calcYs))
-        error = error + np.sum(diff)
-        #plt.plot(cutXs,calcYs)
+    cutXs = xs[:15]
+    cutYs = ys[:15]
+    testXs = xs[15:]
+    testYs = ys[15:]
+    A = fitPoly(cutXs,cutYs,n)
+    calcYs = addPolyTerms(testXs,n) @ A  
+    #plt.vlines(testXs,testYs,calcYs,colors='black')
+    diff = np.absolute(np.subtract(testYs, calcYs))
+    error = np.sum(diff)
+   # plt.plot(xs,addTrigTerms(xs) @ A,c='red')
+    #plt.scatter(cutXs,cutYs)
+    #plt.scatter(testXs,testYs,marker='x',c='orange')
     return error
 
 
 def calcTrigError(xs,ys):
-    numSegs = len(xs) // 20
-    error = 0
-    for i in range(numSegs):
-        cutXs = xs[20*i:20*i+20]
-        cutYs = ys[20*i:20*i+20]
-        A = fitTrig(cutXs,cutYs)
-        calcYs = addTrigTerms(cutXs) @ A  
-        diff = np.absolute(np.subtract(cutYs, calcYs))
-        error = error + np.sum(diff)
-        plt.plot(cutXs,calcYs)
+    cutXs = xs[:15]
+    cutYs = ys[:15]
+    testXs = xs[15:]
+    testYs = ys[15:]
+    A = fitTrig(cutXs,cutYs)
+    calcYs = addTrigTerms(testXs) @ A  
+    #plt.vlines(testXs,testYs,calcYs,colors='black')
+    diff = np.absolute(np.subtract(testYs, calcYs))
+    error = np.sum(diff)
+   # plt.plot(xs,addTrigTerms(xs) @ A,c='red')
+    #plt.scatter(cutXs,cutYs)
+    #plt.scatter(testXs,testYs,marker='x',c='orange')
     return error
 
-print(calcLinearError(xs,ys))
-print(calcTrigError(xs,ys))
-for i in range(1,5):
-    print(calcPolyError(xs,ys,i))
-view_data_segments(xs,ys)
 
+def plotLinear(xs,ys):
+    A = fitLinear(xs,ys)
+    calcYs = addBias(xs) @ A
+    plt.plot(xs,calcYs)
+    diff = np.absolute(np.subtract(ys, calcYs))
+    return np.sum(diff)
+
+def plotPoly(xs,ys,n=3):
+    A = fitPoly(xs,ys,n)
+    calcYs = addPolyTerms(xs,n) @ A
+    plt.plot(xs,calcYs)
+    diff = np.absolute(np.subtract(ys, calcYs))
+    return np.sum(diff)
+
+def plotTrig(xs,ys):
+    A = fitTrig(xs,ys)
+    calcYs = addTrigTerms(xs) @ A
+    plt.plot(xs,calcYs)
+    diff = np.absolute(np.subtract(ys, calcYs))
+    return np.sum(diff)
+# print(calcLinearError(xs,ys))
+# print(calcTrigError(xs,ys))
+# for i in range(1,5):
+#     print(calcPolyError(xs,ys,i))
+#
+
+# numSegs = len(xs) // 20
+# for i in range(numSegs):
+#         cutXs = xs[20*i:20*i+20]
+#         cutYs = ys[20*i:20*i+20]
+#         print(calcTrigError(cutXs,cutYs))
+# plt.show()
+
+
+numSegs = len(xs) // 20
+reconstructionError = 0
+weightsDict = {0:plotLinear, 1:plotPoly,2:plotTrig}
+for i in range(numSegs):
+        cutXs = xs[20*i:20*i+20]
+        cutYs = ys[20*i:20*i+20]
+        errors = np.array([calcLinearError(cutXs,cutYs),calcPolyError(cutXs,cutYs,3),calcTrigError(cutXs,cutYs)])
+        print(errors)
+        
+        best = np.argmin(errors)
+        print(f'Seg Num: {i} has best {best}')
+        
+        #print(weightsDict[best](cutXs,cutYs))
+        reconstructionError += weightsDict[best](cutXs,cutYs)
+        
+    
+print(reconstructionError)
+view_data_segments(xs,ys)
