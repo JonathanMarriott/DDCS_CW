@@ -34,12 +34,16 @@ def view_data_segments(xs, ys):
     plt.show()
 
 xs,ys = load_points_from_file(sys.argv[1])
-
-
+plot = False
+try:
+    if sys.argv.index("--plot") > 0:
+        print("plotting")
+        plot = True
+except:
+    plot = False
 
 xs = np.array(xs)
 ys = np.array(ys)
-#print(x,y)
 
 
 def mleFit(x,y):
@@ -75,7 +79,7 @@ def testTrain(xs,ys,testIndex):
     ytestVals = ys[testIndex]
     return xtrainVals, xtestVals, ytrainVals, ytestVals
 
-def calcLinearError(trainXs, testXs, trainYs, testYs):
+def calcLinearError(trainXs, testXs, trainYs, testYs,doPlot=False):
     A = fitLinear(trainXs,trainYs)
     calcYs = addBias(testXs) @ A  
     diff = np.square(np.subtract(testYs, calcYs))
@@ -84,9 +88,11 @@ def calcLinearError(trainXs, testXs, trainYs, testYs):
     # plt.plot(xs,addBias(xs) @ A,c='red')
     # plt.scatter(trainXs,trainYs)
     # plt.scatter(testXs,testYs,marker='x',c='orange')
+    if doPlot:
+        plt.plot(testXs,calcYs)
     return error
 
-def calcPolyError(trainXs, testXs, trainYs, testYs,n=3):
+def calcPolyError(trainXs, testXs, trainYs, testYs,n=3,doPlot=False):
     A = fitPoly(trainXs,trainYs,n)
     calcYs = addPolyTerms(testXs,n) @ A  
     #plt.vlines(testXs,testYs,calcYs,colors='black')
@@ -95,10 +101,12 @@ def calcPolyError(trainXs, testXs, trainYs, testYs,n=3):
    # plt.plot(xs,addTrigTerms(xs) @ A,c='red')
     #plt.scatter(cutXs,cutYs)
     #plt.scatter(testXs,testYs,marker='x',c='orange')
+    if doPlot:
+        plt.plot(testXs,calcYs)
     return error
 
 
-def calcTrigError(trainXs, testXs, trainYs, testYs):
+def calcTrigError(trainXs, testXs, trainYs, testYs, doPlot=False):
     #trainXs, testXs, trainYs, testYs = testTrain(xs,ys)
     A = fitTrig(trainXs,trainYs)
     calcYs = addTrigTerms(testXs) @ A  
@@ -108,6 +116,8 @@ def calcTrigError(trainXs, testXs, trainYs, testYs):
    # plt.plot(xs,addTrigTerms(xs) @ A,c='red')
     #plt.scatter(cutXs,cutYs)
     #plt.scatter(testXs,testYs,marker='x',c='orange')
+    if doPlot:
+        plt.plot(testXs,calcYs)
     return error
 
 
@@ -150,7 +160,7 @@ def meanError(func,xs,ys):
 
 numSegs = len(xs) // 20
 reconstructionError = 0
-weightsDict = {0:plotLinear, 1:plotPoly, 2:plotTrig}
+weightsDict = {0:calcLinearError, 1:calcPolyError, 2:calcTrigError}
 for i in range(numSegs):
         cutXs = xs[20*i:20*i+20]
         cutYs = ys[20*i:20*i+20]
@@ -161,8 +171,8 @@ for i in range(numSegs):
         print(f'Seg Num: {i} has best {best}')
         
         #print(weightsDict[best](cutXs,cutYs))
-        reconstructionError += weightsDict[best](cutXs,cutYs)
+        reconstructionError += weightsDict[best](cutXs,cutXs,cutYs,cutYs,plot)
         
-    
+if plot:
+    view_data_segments(xs,ys)    
 print(reconstructionError)
-view_data_segments(xs,ys)
