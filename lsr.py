@@ -3,6 +3,7 @@ import sys
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
+import random
 
 def load_points_from_file(filename):
     """Loads 2d points from a csv called filename
@@ -66,30 +67,33 @@ def fitLinear(xs,ys):
 def fitPoly(xs,ys,n):
     return mleFit(addPolyTerms(xs,n),ys)
 
+def testTrain(xs,ys):
+    trainIndex = random.sample(range(20),15)
+    xtrainVals = xs[trainIndex]
+    xtestVals = np.delete(xs,trainIndex)
+    ytrainVals = ys[trainIndex]
+    ytestVals = np.delete(ys,trainIndex)
+    return xtrainVals, xtestVals, ytrainVals, ytestVals
+
 def calcLinearError(xs,ys):
-    cutXs = xs[:15]
-    cutYs = ys[:15]
-    testXs = xs[15:]
-    testYs = ys[15:]
-    A = fitLinear(cutXs,cutYs)
+    trainXs, testXs, trainYs, testYs = testTrain(xs,ys)
+    A = fitLinear(trainXs,trainYs)
     calcYs = addBias(testXs) @ A  
-    #plt.vlines(testXs,testYs,calcYs,colors='black')
-    diff = np.absolute(np.subtract(testYs, calcYs))
+
+    diff = np.square(np.subtract(testYs, calcYs))
     error = np.sum(diff)
-   # plt.plot(xs,addTrigTerms(xs) @ A,c='red')
-    #plt.scatter(cutXs,cutYs)
-    #plt.scatter(testXs,testYs,marker='x',c='orange')
+    # plt.vlines(testXs,testYs,calcYs,colors='black')
+    # plt.plot(xs,addBias(xs) @ A,c='red')
+    # plt.scatter(trainXs,trainYs)
+    # plt.scatter(testXs,testYs,marker='x',c='orange')
     return error
 
 def calcPolyError(xs,ys,n):
-    cutXs = xs[:15]
-    cutYs = ys[:15]
-    testXs = xs[15:]
-    testYs = ys[15:]
-    A = fitPoly(cutXs,cutYs,n)
+    trainXs, testXs, trainYs, testYs = testTrain(xs,ys)
+    A = fitPoly(trainXs,trainYs,n)
     calcYs = addPolyTerms(testXs,n) @ A  
     #plt.vlines(testXs,testYs,calcYs,colors='black')
-    diff = np.absolute(np.subtract(testYs, calcYs))
+    diff = np.square(np.subtract(testYs, calcYs))
     error = np.sum(diff)
    # plt.plot(xs,addTrigTerms(xs) @ A,c='red')
     #plt.scatter(cutXs,cutYs)
@@ -98,14 +102,11 @@ def calcPolyError(xs,ys,n):
 
 
 def calcTrigError(xs,ys):
-    cutXs = xs[:15]
-    cutYs = ys[:15]
-    testXs = xs[15:]
-    testYs = ys[15:]
-    A = fitTrig(cutXs,cutYs)
+    trainXs, testXs, trainYs, testYs = testTrain(xs,ys)
+    A = fitTrig(trainXs,trainYs)
     calcYs = addTrigTerms(testXs) @ A  
     #plt.vlines(testXs,testYs,calcYs,colors='black')
-    diff = np.absolute(np.subtract(testYs, calcYs))
+    diff = np.square(np.subtract(testYs, calcYs))
     error = np.sum(diff)
    # plt.plot(xs,addTrigTerms(xs) @ A,c='red')
     #plt.scatter(cutXs,cutYs)
@@ -117,21 +118,21 @@ def plotLinear(xs,ys):
     A = fitLinear(xs,ys)
     calcYs = addBias(xs) @ A
     plt.plot(xs,calcYs)
-    diff = np.absolute(np.subtract(ys, calcYs))
+    diff = np.square(np.subtract(ys, calcYs))
     return np.sum(diff)
 
 def plotPoly(xs,ys,n=3):
     A = fitPoly(xs,ys,n)
     calcYs = addPolyTerms(xs,n) @ A
     plt.plot(xs,calcYs)
-    diff = np.absolute(np.subtract(ys, calcYs))
+    diff = np.square(np.subtract(ys, calcYs))
     return np.sum(diff)
 
 def plotTrig(xs,ys):
     A = fitTrig(xs,ys)
     calcYs = addTrigTerms(xs) @ A
     plt.plot(xs,calcYs)
-    diff = np.absolute(np.subtract(ys, calcYs))
+    diff = np.square(np.subtract(ys, calcYs))
     return np.sum(diff)
 # print(calcLinearError(xs,ys))
 # print(calcTrigError(xs,ys))
@@ -146,14 +147,17 @@ def plotTrig(xs,ys):
 #         print(calcTrigError(cutXs,cutYs))
 # plt.show()
 
+def meanError(func,n,*args):
+    return np.average([func(*args) for _ in range(n)])
+
 
 numSegs = len(xs) // 20
 reconstructionError = 0
-weightsDict = {0:plotLinear, 1:plotPoly,2:plotTrig}
+weightsDict = {0:plotLinear, 1:plotPoly, 2:plotTrig}
 for i in range(numSegs):
         cutXs = xs[20*i:20*i+20]
         cutYs = ys[20*i:20*i+20]
-        errors = np.array([calcLinearError(cutXs,cutYs),calcPolyError(cutXs,cutYs,3),calcTrigError(cutXs,cutYs)])
+        errors = np.array([meanError(calcLinearError,10,cutXs,cutYs),meanError(calcPolyError,10,cutXs,cutYs,3),meanError(calcTrigError,10,cutXs,cutYs)])
         print(errors)
         
         best = np.argmin(errors)
