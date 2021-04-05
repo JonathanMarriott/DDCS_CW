@@ -67,19 +67,17 @@ def fitLinear(xs,ys):
 def fitPoly(xs,ys,n):
     return mleFit(addPolyTerms(xs,n),ys)
 
-def testTrain(xs,ys):
-    trainIndex = random.sample(range(20),15)
-    xtrainVals = xs[trainIndex]
-    xtestVals = np.delete(xs,trainIndex)
-    ytrainVals = ys[trainIndex]
-    ytestVals = np.delete(ys,trainIndex)
+def testTrain(xs,ys,testIndex):
+    #trainIndex = random.sample(range(20),15)
+    xtrainVals = np.delete(xs,testIndex)
+    xtestVals =  xs[testIndex]
+    ytrainVals = np.delete(ys,testIndex)
+    ytestVals = ys[testIndex]
     return xtrainVals, xtestVals, ytrainVals, ytestVals
 
-def calcLinearError(xs,ys):
-    trainXs, testXs, trainYs, testYs = testTrain(xs,ys)
+def calcLinearError(trainXs, testXs, trainYs, testYs):
     A = fitLinear(trainXs,trainYs)
     calcYs = addBias(testXs) @ A  
-
     diff = np.square(np.subtract(testYs, calcYs))
     error = np.sum(diff)
     # plt.vlines(testXs,testYs,calcYs,colors='black')
@@ -88,8 +86,7 @@ def calcLinearError(xs,ys):
     # plt.scatter(testXs,testYs,marker='x',c='orange')
     return error
 
-def calcPolyError(xs,ys,n):
-    trainXs, testXs, trainYs, testYs = testTrain(xs,ys)
+def calcPolyError(trainXs, testXs, trainYs, testYs,n=3):
     A = fitPoly(trainXs,trainYs,n)
     calcYs = addPolyTerms(testXs,n) @ A  
     #plt.vlines(testXs,testYs,calcYs,colors='black')
@@ -101,8 +98,8 @@ def calcPolyError(xs,ys,n):
     return error
 
 
-def calcTrigError(xs,ys):
-    trainXs, testXs, trainYs, testYs = testTrain(xs,ys)
+def calcTrigError(trainXs, testXs, trainYs, testYs):
+    #trainXs, testXs, trainYs, testYs = testTrain(xs,ys)
     A = fitTrig(trainXs,trainYs)
     calcYs = addTrigTerms(testXs) @ A  
     #plt.vlines(testXs,testYs,calcYs,colors='black')
@@ -147,8 +144,8 @@ def plotTrig(xs,ys):
 #         print(calcTrigError(cutXs,cutYs))
 # plt.show()
 
-def meanError(func,n,*args):
-    return np.average([func(*args) for _ in range(n)])
+def meanError(func,xs,ys):
+    return np.average([func(*testTrain(xs,ys,i)) for i in range(20)])
 
 
 numSegs = len(xs) // 20
@@ -157,7 +154,7 @@ weightsDict = {0:plotLinear, 1:plotPoly, 2:plotTrig}
 for i in range(numSegs):
         cutXs = xs[20*i:20*i+20]
         cutYs = ys[20*i:20*i+20]
-        errors = np.array([meanError(calcLinearError,10,cutXs,cutYs),meanError(calcPolyError,10,cutXs,cutYs,3),meanError(calcTrigError,10,cutXs,cutYs)])
+        errors = np.array([meanError(calcLinearError,cutXs,cutYs),meanError(calcPolyError,cutXs,cutYs),1.1*meanError(calcTrigError,cutXs,cutYs)])
         print(errors)
         
         best = np.argmin(errors)
