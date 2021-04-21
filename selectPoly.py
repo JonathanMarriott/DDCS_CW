@@ -108,18 +108,25 @@ def meanError(func,xs,ys):
 
 
 numSegs = len(xs) // 20
-reconstructionError = 0
-weightsDict = [calcLinearError, calcPolyError, calcTrigError]
+#reconstructionError = []
+weightsList = [calcLinearError, calcPolyError, calcTrigError]
 for i in range(numSegs):
         cutXs = xs[20*i:20*i+20]
         cutYs = ys[20*i:20*i+20]
-        errors = np.array([meanError(calcLinearError,cutXs,cutYs),meanError(calcPolyError,cutXs,cutYs),1.1*meanError(calcTrigError,cutXs,cutYs)])
-        print(errors)
         
-        best = np.argmin(errors)
-        print(f'Seg Num: {i} has best {["linear","poly","trig"][best]}')
+        # for j in range(10):
+        #     reconstructionError[j] = calcPolyError(cutXs,cutXs,cutYs,cutYs,plot,n=j)
+        reconstructionError = [calcPolyError(cutXs,cutXs,cutYs,cutYs,plot,n=j) for j in range(2,12)]
+        fig, ax = plt.subplots()
+        ax.bar(range(2,12),reconstructionError)
+        ax.set_xticks(np.arange(2,len(range(12)),1))
+        ax.set(xlabel='Polynomial Degree', ylabel='Sum square error',
+       title='Reconstruction error for different polynomial degrees')
+        plt.show()
         
-        reconstructionError += weightsDict[best](cutXs,cutXs,cutYs,cutYs,plot)
+        calcPolyError(cutXs,cutXs,cutYs,cutYs,True,n=3)
+        view_data_segments(cutXs,cutYs)
+        plt.show()
 
 print(reconstructionError)    
 if plot:
