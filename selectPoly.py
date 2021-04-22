@@ -1,5 +1,6 @@
 import os
 import sys
+from numpy.lib.function_base import append
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
@@ -31,9 +32,9 @@ def view_data_segments(xs, ys):
     colour = np.concatenate([[i] * 20 for i in range(num_segments)])
     plt.set_cmap('Dark2')
     plt.scatter(xs, ys, c=colour)
-    plt.show()
+   # plt.show()
 
-xs,ys = load_points_from_file(sys.argv[1])
+
 plot = False
 try:
     if sys.argv.index("--plot") > 0:
@@ -41,19 +42,19 @@ try:
 except:
     plot = False
 
-xs = np.array(xs)
-ys = np.array(ys)
+
 
 def mleFit(x,y):
-    return np.linalg.inv(x.T.dot(x)).dot(x.T).dot(y)
-
+    #return np.linalg.inv(x.T.dot(x)).dot(x.T).dot(y)
+    return np.linalg.solve(x.T.dot(x),(x.T).dot(y))
 def addBias(x):
     return np.column_stack((np.ones(x.shape),x))
 
 def addPolyTerms(x,n):
     xs = addBias(x)
-    for i in range(2,n):
+    for i in range(2,n+1):
         xs = np.column_stack((xs,x**(i)))
+        #print(i)
     return xs
 
 def addTrigTerms(x):
@@ -86,11 +87,25 @@ def calcLinearError(trainXs, testXs, trainYs, testYs,doPlot=False):
 
 def calcPolyError(trainXs, testXs, trainYs, testYs,doPlot=False,n=3):
     A = fitPoly(trainXs,trainYs,n)
-    calcYs = addPolyTerms(testXs,n) @ A  
+    #print(A.shape)
+    polyXs = addPolyTerms(testXs,n)
+    #print(polyXs)
+    # print("\n\n ",n)
+    # print(A)
+    # A,__ ,_ ,___= np.linalg.lstsq(polyXs,testYs,0)
+    # print(A)
+    # A = np.flip(np.polyfit(trainXs,trainYs,n))
+    # print(A)
+    # calcYs = np.empty(testXs.shape)
+    # for i in range(n+1):
+    #     calcYs += A[i]* polyXs[i]
+    calcYs = np.dot(addPolyTerms(testXs,n),A)  
     diff = np.square(np.subtract(testYs, calcYs))
     error = np.sum(diff)
     if doPlot:
-        plt.plot(testXs,calcYs)
+        plt.plot(testXs,calcYs,label = "Degree "+str(n))
+        plt.legend(loc="best")
+        view_data_segments(trainXs,trainYs)
     return error
 
 
@@ -107,28 +122,39 @@ def meanError(func,xs,ys):
     return np.average([func(*testTrain(xs,ys,i)) for i in range(20)])
 
 
-numSegs = len(xs) // 20
-#reconstructionError = []
+
+
 weightsList = [calcLinearError, calcPolyError, calcTrigError]
-for i in range(numSegs):
-        cutXs = xs[20*i:20*i+20]
-        cutYs = ys[20*i:20*i+20]
-        
-        # for j in range(10):
-        #     reconstructionError[j] = calcPolyError(cutXs,cutXs,cutYs,cutYs,plot,n=j)
-        reconstructionError = [calcPolyError(cutXs,cutXs,cutYs,cutYs,plot,n=j) for j in range(2,12)]
-        fig, ax = plt.subplots()
-        ax.bar(range(2,12),reconstructionError)
-        ax.set_xticks(np.arange(2,len(range(12)),1))
-        ax.set(xlabel='Polynomial Degree', ylabel='Sum square error',
-       title='Reconstruction error for different polynomial degrees')
-        plt.show()
-        
-        calcPolyError(cutXs,cutXs,cutYs,cutYs,True,n=3)
-        view_data_segments(cutXs,cutYs)
-        plt.show()
 
-print(reconstructionError)    
-if plot:
-    view_data_segments(xs,ys)    
+def comparePoly(file,segnums,max=6):
+    xs,ys = load_points_from_file(file)
+    reconstructionError = np.empty(10)
+    numSegs = len(xs) // 20
+    for i in range(numSegs):
+        if i == segnums :
+            cutXs = xs[20*i:20*i+20]
+            cutYs = ys[20*i:20*i+20]
+            reconstructionError = [calcPolyError(cutXs,cutXs,cutYs,cutYs,True,n=j) for j in range(2,max)]
+    return np.array(reconstructionError)
+            
 
+# totError = np.add(comparePoly("basic_4.csv",[1]),comparePoly("basic_3.csv",[0]))
+# totError = np.add(totError,comparePoly("adv_1.csv",[0,2]))
+# totError = np.add(totError,comparePoly("adv_3.csv",[1,5]))
+# print(totError)
+def ploterrors(totError):
+    fig, ax = plt.subplots()
+    ax.bar(range(2,len(totError)+2),totError)
+    ax.set_xticks(np.arange(2,len(totError)+2,1))
+    ax.set(xlabel='Polynomial Degree', ylabel='Sum error',
+                title='Reconstruction error for different polynomial degrees')
+    plt.show()
+# vals =comparePoly("basic_4.csv",1)+comparePoly("basic_3.csv",0)+comparePoly("adv_1.csv",0)+comparePoly("adv_1.csv",2)+comparePoly("adv_3.csv",1)+comparePoly("adv_3.csv",5)
+# vals = np.sqrt(vals)
+# ploterrors(vals)
+ploterrors(comparePoly("basic_4.csv",1))
+ploterrors(comparePoly("basic_3.csv",0))
+ploterrors(comparePoly("adv_1.csv",0))
+ploterrors(comparePoly("adv_1.csv",2) )
+ploterrors(comparePoly("adv_3.csv",1))
+ploterrors(comparePoly("adv_3.csv",5))

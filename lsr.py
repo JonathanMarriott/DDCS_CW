@@ -52,7 +52,8 @@ def addBias(x):
 
 def addPolyTerms(x,n):
     xs = addBias(x)
-    for i in range(2,n):
+    for i in range(2,n+1):
+        print(i)
         xs = np.column_stack((xs,x**(i)))
     return xs
 
@@ -86,6 +87,8 @@ def calcLinearError(trainXs, testXs, trainYs, testYs,doPlot=False):
 
 def calcPolyError(trainXs, testXs, trainYs, testYs,doPlot=False,n=3):
     A = fitPoly(trainXs,trainYs,n)
+    print(addPolyTerms(testXs,n))
+    print(A)
     calcYs = addPolyTerms(testXs,n) @ A  
     diff = np.square(np.subtract(testYs, calcYs))
     error = np.sum(diff)
