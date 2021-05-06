@@ -103,7 +103,9 @@ def calcPolyError(trainXs, testXs, trainYs, testYs,doPlot=False,n=3):
     diff = np.square(np.subtract(testYs, calcYs))
     error = np.sum(diff)
     if doPlot:
-        plt.plot(testXs,calcYs,label = "Degree "+str(n))
+        newXs = np.linspace(trainXs[0],trainXs[-1],100)
+        calcNewYs = np.dot(addPolyTerms(newXs,n),A) 
+        plt.plot(newXs,calcNewYs,label = "Degree "+str(n))
         plt.legend(loc="best")
         view_data_segments(trainXs,trainYs)
     return error
@@ -149,12 +151,31 @@ def ploterrors(totError):
     ax.set(xlabel='Polynomial Degree', ylabel='Sum error',
                 title='Reconstruction error for different polynomial degrees')
     plt.show()
+
+
+def showseg(file,segnums):
+    xs,ys = load_points_from_file(file)
+    #reconstructionError = np.empty(10)
+    numSegs = len(xs) // 20
+    for i in range(numSegs):
+        if i == segnums :
+            cutXs = xs[20*i:20*i+20]
+            cutYs = ys[20*i:20*i+20]
+            calcTrigError(cutXs,cutXs,cutYs,cutYs,True)
+            view_data_segments(cutXs,cutYs)
+            plt.show()
+
 # vals =comparePoly("basic_4.csv",1)+comparePoly("basic_3.csv",0)+comparePoly("adv_1.csv",0)+comparePoly("adv_1.csv",2)+comparePoly("adv_3.csv",1)+comparePoly("adv_3.csv",5)
 # vals = np.sqrt(vals)
 # ploterrors(vals)
+#showseg("basic_5.csv",0)
+ploterrors(comparePoly("basic_5.csv",0))
 ploterrors(comparePoly("basic_4.csv",1))
 ploterrors(comparePoly("basic_3.csv",0))
 ploterrors(comparePoly("adv_1.csv",0))
 ploterrors(comparePoly("adv_1.csv",2) )
 ploterrors(comparePoly("adv_3.csv",1))
 ploterrors(comparePoly("adv_3.csv",5))
+# showseg("adv_2.csv",0)
+# showseg("adv_3.csv",2)
+# showseg("adv_3.csv",4)

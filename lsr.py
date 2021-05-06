@@ -45,7 +45,7 @@ xs = np.array(xs)
 ys = np.array(ys)
 
 def mleFit(x,y):
-    return np.linalg.inv(x.T.dot(x)).dot(x.T).dot(y)
+    return np.linalg.solve(x.T.dot(x),(x.T).dot(y))
 
 def addBias(x):
     return np.column_stack((np.ones(x.shape),x))
@@ -53,7 +53,6 @@ def addBias(x):
 def addPolyTerms(x,n):
     xs = addBias(x)
     for i in range(2,n+1):
-        print(i)
         xs = np.column_stack((xs,x**(i)))
     return xs
 
@@ -70,11 +69,21 @@ def fitPoly(xs,ys,n):
     return mleFit(addPolyTerms(xs,n),ys)
 
 def testTrain(xs,ys,testIndex):
+    '''Creates a test and training set with the given index specifying the testing set'''
     xtrainVals = np.delete(xs,testIndex)
     xtestVals =  xs[testIndex]
     ytrainVals = np.delete(ys,testIndex)
     ytestVals = ys[testIndex]
     return xtrainVals, xtestVals, ytrainVals, ytestVals
+#
+# Random sample selector  
+# def testTrain(xs,ys):
+#     trainIndex = random.sample(range(20),15)
+#     xtrainVals = xs[trainIndex]
+#     xtestVals = np.delete(xs,trainIndex)
+#     ytrainVals = ys[trainIndex]
+#     ytestVals = np.delete(ys,trainIndex)
+#     return xtrainVals, xtestVals, ytrainVals, ytestVals
 
 def calcLinearError(trainXs, testXs, trainYs, testYs,doPlot=False):
     A = fitLinear(trainXs,trainYs)
@@ -87,13 +96,13 @@ def calcLinearError(trainXs, testXs, trainYs, testYs,doPlot=False):
 
 def calcPolyError(trainXs, testXs, trainYs, testYs,doPlot=False,n=3):
     A = fitPoly(trainXs,trainYs,n)
-    print(addPolyTerms(testXs,n))
-    print(A)
     calcYs = addPolyTerms(testXs,n) @ A  
     diff = np.square(np.subtract(testYs, calcYs))
     error = np.sum(diff)
     if doPlot:
-        plt.plot(testXs,calcYs)
+        newXs = np.linspace(trainXs[0],trainXs[-1],100)
+        calcNewYs = np.dot(addPolyTerms(newXs,3),A) 
+        plt.plot(newXs,calcNewYs)
     return error
 
 
@@ -103,10 +112,14 @@ def calcTrigError(trainXs, testXs, trainYs, testYs, doPlot=False):
     diff = np.square(np.subtract(testYs, calcYs))
     error = np.sum(diff)
     if doPlot:
-        plt.plot(testXs,calcYs)
+        newXs = np.linspace(trainXs[0],trainXs[-1],100)
+        calcNewYs = np.dot(addTrigTerms(newXs),A) 
+        plt.plot(newXs,calcNewYs)
     return error
 
+
 def meanError(func,xs,ys):
+    '''Carries out cross validation k-fold over the inputed data and averages the total error'''
     return np.average([func(*testTrain(xs,ys,i)) for i in range(20)])
 
 
@@ -116,11 +129,9 @@ weightsDict = [calcLinearError, calcPolyError, calcTrigError]
 for i in range(numSegs):
         cutXs = xs[20*i:20*i+20]
         cutYs = ys[20*i:20*i+20]
-        errors = np.array([meanError(calcLinearError,cutXs,cutYs),meanError(calcPolyError,cutXs,cutYs),1.1*meanError(calcTrigError,cutXs,cutYs)])
-        print(errors)
-        
+        errors = np.array([meanError(calcLinearError,cutXs,cutYs),meanError(calcPolyError,cutXs,cutYs),1.025*meanError(calcTrigError,cutXs,cutYs)])
         best = np.argmin(errors)
-        print(f'Seg Num: {i} has best {["linear","poly","trig"][best]}')
+       # print(f'Seg Number {i} has best {["linear","poly","trig"][best]}')
         
         reconstructionError += weightsDict[best](cutXs,cutXs,cutYs,cutYs,plot)
 
